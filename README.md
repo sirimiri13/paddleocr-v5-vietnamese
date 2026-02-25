@@ -297,4 +297,3 @@ Pull requests are welcome!
 ---
 
 **Ready to train?** Mở `kaggle_training.ipynb` và bắt đầu! 🚀
-# paddleocr-v5-vietnamese
