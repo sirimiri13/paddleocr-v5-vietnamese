@@ -4,21 +4,21 @@ Global:
   epoch_num: 100
   log_smooth_window: 20
   print_batch_step: 100
-  save_model_dir: ./output/vi_ppocr_v5
+  save_model_dir: /kaggle/working/paddleocr-v5-vietnamese/output/vi_ppocr_v5
   save_epoch_step: 5
   eval_batch_step: [0, 2000]
   cal_metric_during_train: true
-  pretrained_model: ./pretrain_models/ch_PP-OCRv5_rec_train/best_accuracy
+  pretrained_model: /kaggle/working/paddleocr-v5-vietnamese/pretrain_models/ch_PP-OCRv5_rec_train/best_accuracy
   checkpoints:
   save_inference_dir:
   use_visualdl: false
   infer_img:
-  character_dict_path: ./dict/vi_dict.txt
+  character_dict_path: /kaggle/working/paddleocr-v5-vietnamese/dict/vi_dict.txt
   max_text_length: &max_text_length 40
   infer_mode: false
   use_space_char: true
   distributed: true
-  save_res_path: ./output/predicts.txt
+  save_res_path: /kaggle/working/paddleocr-v5-vietnamese/output/predicts.txt
 
 Optimizer:
   name: AdamW
@@ -87,10 +87,10 @@ Train:
   dataset:
     name: MultiScaleDataSet
     ds_width: false
-    data_dir: ./data/
+    data_dir: /kaggle/working/paddleocr-v5-vietnamese/data/
     ext_op_transform_idx: 1
     label_file_list:
-      - ./data/train_list.txt
+      - /kaggle/working/paddleocr-v5-vietnamese/data/train_list.txt
     transforms:
       - DecodeImage:
           img_mode: BGR
@@ -127,9 +127,9 @@ Train:
 Eval:
   dataset:
     name: SimpleDataSet
-    data_dir: ./data/
+    data_dir: /kaggle/working/paddleocr-v5-vietnamese/data/
     label_file_list:
-      - ./data/val_list.txt
+      - /kaggle/working/paddleocr-v5-vietnamese/data/val_list.txt
     transforms:
       - DecodeImage:
           img_mode: BGR

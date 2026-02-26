@@ -55,15 +55,31 @@ echo -e "\n${GREEN}[3/5] Creating test config...${NC}"
 
 cp config_kaggle.yml config_test.yml
 
+# Fix paths in config
+python fix_config.py config_test.yml
+
 # Modify for quick test
 sed -i 's/epoch_num: 100/epoch_num: 5/' config_test.yml
 sed -i 's/print_batch_step: 100/print_batch_step: 10/' config_test.yml
 sed -i 's/save_epoch_step: 5/save_epoch_step: 2/' config_test.yml
-sed -i 's|save_model_dir: ./output/vi_ppocr_v5|save_model_dir: ./output/test_10k|' config_test.yml
+sed -i 's|/vi_ppocr_v5|/test_10k|g' config_test.yml
 
 echo "✓ Test config created: config_test.yml"
 echo "   Epochs: 5 (instead of 100)"
-echo "   Output: ./output/test_10k"
+echo "   Output: output/test_10k"
+
+# Check prerequisites
+if [ ! -f "data/train_list.txt" ]; then
+    echo -e "${YELLOW}❌ data/train_list.txt not found!${NC}"
+    echo "Please run: python fix_prepare_data.py --input_dir /kaggle/input/YOUR_DATASET"
+    exit 1
+fi
+
+if [ ! -d "PaddleOCR" ]; then
+    echo -e "${YELLOW}❌ PaddleOCR directory not found!${NC}"
+    echo "Please run: bash setup_kaggle.sh"
+    exit 1
+fi
 
 # Start test training
 echo -e "\n${GREEN}[4/5] Starting test training...${NC}"
@@ -73,15 +89,18 @@ echo ""
 LOG_FILE="logs/test_10k_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p logs
 
+# Get absolute path to project root
+PROJECT_ROOT=$(pwd)
+
 cd PaddleOCR
 
 python -m paddle.distributed.launch \
     --gpus '0,1' \
     tools/train.py \
-    -c ../config_test.yml \
-    2>&1 | tee ../$LOG_FILE
+    -c ${PROJECT_ROOT}/config_test.yml \
+    2>&1 | tee ${PROJECT_ROOT}/$LOG_FILE
 
-cd ..
+cd ${PROJECT_ROOT}
 
 # Verify model
 echo -e "\n${GREEN}[5/5] Verifying model...${NC}"

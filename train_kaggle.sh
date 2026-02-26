@@ -70,19 +70,26 @@ mkdir -p logs
 # Build training command
 cd PaddleOCR
 
+# Fix config first
+cd ..
+python fix_config.py $CONFIG
+cd PaddleOCR
+
+PROJECT_ROOT=$(dirname $(pwd))
+
 if [ "$RESUME" = true ]; then
     # Resume from checkpoint
     CMD="python -m paddle.distributed.launch \
         --gpus '$GPUS' \
         tools/train.py \
-        -c ../$CONFIG \
-        -o Global.checkpoints=../output/vi_ppocr_v5/latest"
+        -c ${PROJECT_ROOT}/$CONFIG \
+        -o Global.checkpoints=${PROJECT_ROOT}/output/vi_ppocr_v5/latest"
 else
     # Fresh training
     CMD="python -m paddle.distributed.launch \
         --gpus '$GPUS' \
         tools/train.py \
-        -c ../$CONFIG"
+        -c ${PROJECT_ROOT}/$CONFIG"
 fi
 
 # Start training

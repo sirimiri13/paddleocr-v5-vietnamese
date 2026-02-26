@@ -121,15 +121,21 @@ echo ""
 LOG_FILE="logs/train_full_$(date +%Y%m%d_%H%M%S).log"
 mkdir -p logs
 
+# Fix config paths
+python fix_config.py config_kaggle.yml
+
+# Get absolute path
+PROJECT_ROOT=$(pwd)
+
 cd PaddleOCR
 
 python -m paddle.distributed.launch \
     --gpus '0,1' \
     tools/train.py \
-    -c ../config_kaggle.yml \
-    2>&1 | tee ../$LOG_FILE
+    -c ${PROJECT_ROOT}/config_kaggle.yml \
+    2>&1 | tee ${PROJECT_ROOT}/$LOG_FILE
 
-cd ..
+cd ${PROJECT_ROOT}
 
 # Training completed
 echo -e "\n╔══════════════════════════════════════════════════════════════╗"
