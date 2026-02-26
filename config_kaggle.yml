@@ -60,9 +60,6 @@ Architecture:
       - NRTRHead:
           nrtr_dim: 384
           max_text_length: *max_text_length
-      - SARHead:
-          enc_dim: 512
-          max_text_length: *max_text_length
 
 Loss:
   name: MultiLoss
@@ -72,8 +69,6 @@ Loss:
     - NRTRLoss:
         weight: 1.0
         smoothing: true
-    - SARLoss:
-        weight: 1.0
 
 PostProcess:
   name: CTCLabelDecode
