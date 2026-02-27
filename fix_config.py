@@ -1,52 +1,108 @@
 #!/usr/bin/env python3
 """
-Auto-fix config paths
-Tự động sửa config với absolute paths
+Fix PaddleOCR v5 config for multi-head (CTC+SAR) recognition.
+
+Ensures:
+- MultiLabelEncode is used instead of CTCLabelEncode
+- KeepKeys includes label_ctc, label_sar, length, valid_ratio
+- Both Train and Eval datasets are fixed
 """
 
-import os
 import sys
+import yaml
+import copy
 
-def fix_config(config_file='config_kaggle.yml'):
-    """Fix paths in config to use absolute paths"""
-    
-    # Get project root (current directory)
-    project_root = os.getcwd()
-    
-    print(f"🔧 Fixing config: {config_file}")
-    print(f"   Project root: {project_root}")
-    
-    if not os.path.exists(config_file):
-        print(f"❌ Config not found: {config_file}")
-        return False
-    
-    # Read config
-    with open(config_file, 'r') as f:
-        content = f.read()
-    
-    # Replace relative paths with absolute
-    replacements = {
-        './data/': f'{project_root}/data/',
-        './dict/': f'{project_root}/dict/',
-        './output/': f'{project_root}/output/',
-        './pretrain_models/': f'{project_root}/pretrain_models/',
-        './inference/': f'{project_root}/inference/',
-    }
-    
-    original_content = content
-    for old, new in replacements.items():
-        content = content.replace(old, new)
-    
-    # Write back
-    if content != original_content:
-        with open(config_file, 'w') as f:
-            f.write(content)
-        print(f"✓ Config fixed with absolute paths")
-        return True
-    else:
-        print(f"✓ Config already has correct paths")
-        return True
+
+def fix_transforms(transforms):
+    """Fix transform list to use MultiLabelEncode and correct KeepKeys."""
+    if not transforms:
+        return transforms
+
+    new_transforms = []
+    has_multi_label = False
+    has_ctc_label = False
+
+    for t in transforms:
+        if isinstance(t, dict):
+            # Replace CTCLabelEncode with MultiLabelEncode
+            if 'CTCLabelEncode' in t:
+                print(f"  → Replacing CTCLabelEncode with MultiLabelEncode")
+                params = t['CTCLabelEncode'] or {}
+                if params is None:
+                    params = {}
+                new_transforms.append({'MultiLabelEncode': params})
+                has_multi_label = True
+                continue
+
+            # If MultiLabelEncode already exists, keep it
+            if 'MultiLabelEncode' in t:
+                has_multi_label = True
+                new_transforms.append(t)
+                continue
+
+            # Fix KeepKeys to include all required keys
+            if 'KeepKeys' in t:
+                keep_params = t['KeepKeys'] or {}
+                if keep_params is None:
+                    keep_params = {}
+                keys = keep_params.get('keep_keys', [])
+
+                required_keys = ['image', 'label_ctc', 'label_sar', 'length', 'valid_ratio']
+                # Check if it's using old-style keys
+                if 'label' in keys and 'label_ctc' not in keys:
+                    print(f"  → Fixing KeepKeys: {keys} -> {required_keys}")
+                    keep_params['keep_keys'] = required_keys
+                elif 'label_sar' not in keys:
+                    print(f"  → Fixing KeepKeys: {keys} -> {required_keys}")
+                    keep_params['keep_keys'] = required_keys
+                else:
+                    print(f"  → KeepKeys already correct: {keys}")
+
+                new_transforms.append({'KeepKeys': keep_params})
+                continue
+
+        new_transforms.append(t)
+
+    return new_transforms
+
+
+def fix_config(config_path):
+    """Fix config file for multi-head recognition."""
+    print(f"\n{'='*60}")
+    print(f"Fixing config: {config_path}")
+    print(f"{'='*60}")
+
+    with open(config_path, 'r', encoding='utf-8') as f:
+        config = yaml.safe_load(f)
+
+    # Fix Train transforms
+    try:
+        train_transforms = config['Train']['dataset']['transforms']
+        print("\n[Train transforms]")
+        config['Train']['dataset']['transforms'] = fix_transforms(train_transforms)
+    except (KeyError, TypeError) as e:
+        print(f"  Warning: Could not fix Train transforms: {e}")
+
+    # Fix Eval transforms
+    try:
+        eval_transforms = config['Eval']['dataset']['transforms']
+        print("\n[Eval transforms]")
+        config['Eval']['dataset']['transforms'] = fix_transforms(eval_transforms)
+    except (KeyError, TypeError) as e:
+        print(f"  Warning: Could not fix Eval transforms: {e}")
+
+    # Write fixed config
+    with open(config_path, 'w', encoding='utf-8') as f:
+        yaml.dump(config, f, default_flow_style=False, allow_unicode=True)
+
+    print(f"\n✅ Config fixed and saved: {config_path}")
+    print(f"{'='*60}\n")
+
 
 if __name__ == '__main__':
-    config = sys.argv[1] if len(sys.argv) > 1 else 'config_kaggle.yml'
-    fix_config(config)
+    if len(sys.argv) < 2:
+        print("Usage: python fix_config.py <config.yml>")
+        sys.exit(1)
+
+    config_path = sys.argv[1]
+    fix_config(config_path)
