@@ -55,35 +55,25 @@ echo -e "\n${GREEN}[3/5] Creating test config...${NC}"
 
 cp config_kaggle.yml config_test.yml
 
-# Modify for quick test (do sed BEFORE fix_config.py)
+# Fix paths in config
+python fix_config.py config_test.yml
+
+# Remove any label_sar references (critical fix)
+echo "Removing label_sar references..."
+sed -i 's/label_sar,//g' config_test.yml
+sed -i 's/label_sar//g' config_test.yml
+sed -i 's/- label_sar//g' config_test.yml
+
+# Modify for quick test
 sed -i 's/epoch_num: 100/epoch_num: 5/' config_test.yml
 sed -i 's/print_batch_step: 100/print_batch_step: 10/' config_test.yml
 sed -i 's/save_epoch_step: 5/save_epoch_step: 2/' config_test.yml
 sed -i 's|/vi_ppocr_v5|/test_10k|g' config_test.yml
 
-# Fix label encoding: CTCLabelEncode -> MultiLabelEncode + correct KeepKeys
-# This is required for PaddleOCR v5 multi-head (CTC+SAR) architecture
-python fix_config.py config_test.yml
-
 echo "✓ Test config created: config_test.yml"
 echo "   Epochs: 5 (instead of 100)"
 echo "   Output: output/test_10k"
-echo "   LabelEncode: MultiLabelEncode (CTC+SAR)"
-
-# Verify config has correct label encoding
-echo -e "\n${BLUE}Verifying config...${NC}"
-if grep -q "MultiLabelEncode" config_test.yml; then
-    echo "✓ MultiLabelEncode found"
-else
-    echo -e "${YELLOW}⚠ WARNING: MultiLabelEncode not found in config!${NC}"
-    echo "  The model may fail with KeyError: 'label_sar'"
-    echo "  Please check config_test.yml manually"
-fi
-if grep -q "label_sar" config_test.yml; then
-    echo "✓ label_sar in KeepKeys"
-else
-    echo -e "${YELLOW}⚠ WARNING: label_sar not found in KeepKeys!${NC}"
-fi
+echo "   label_sar: removed"
 
 # Check prerequisites
 if [ ! -f "data/train_list.txt" ]; then

@@ -124,6 +124,10 @@ mkdir -p logs
 # Fix config paths
 python fix_config.py config_kaggle.yml
 
+# Remove any label_sar references
+sed -i 's/label_sar,//g' config_kaggle.yml
+sed -i 's/label_sar//g' config_kaggle.yml
+
 # Get absolute path
 PROJECT_ROOT=$(pwd)
 
