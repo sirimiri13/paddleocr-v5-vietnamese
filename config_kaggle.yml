@@ -99,7 +99,6 @@ Train:
             - image
             - label_ctc
             - label_gtc
-            - label_sar
             - length
             - valid_ratio
   sampler:
@@ -136,7 +135,6 @@ Eval:
             - image
             - label_ctc
             - label_gtc
-            - label_sar
             - length
             - valid_ratio
   loader:
