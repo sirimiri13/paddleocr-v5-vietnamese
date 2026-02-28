@@ -46,17 +46,16 @@ cd ..
 
 # Step 5: Download pretrained model
 echo -e "\n${BLUE}[5/7]${NC} ${GREEN}Downloading pretrained model...${NC}"
-mkdir -p pretrain_models/ch_PP-OCRv5_rec_train
-cd pretrain_models/ch_PP-OCRv5_rec_train
+mkdir -p pretrain_models
 
-if [ ! -f "best_accuracy.pdparams" ]; then
+if [ ! -f "pretrain_models/en_PP-OCRv5_mobile_rec_pretrained.pdparams" ]; then
     echo "Downloading Latin PP-OCRv5 mobile model..."
-    wget -q --show-progress https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/latin_PP-OCRv5_mobile_rec_pretrained.pdparams -O best_accuracy.pdparams
+    wget -q --show-progress https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/latin_PP-OCRv5_mobile_rec_pretrained.pdparams \
+        -O pretrain_models/en_PP-OCRv5_mobile_rec_pretrained.pdparams
     echo "✓ Pretrained model downloaded"
 else
     echo "✓ Pretrained model already exists"
 fi
-cd ../..
 
 # Step 6: Create directories
 echo -e "\n${BLUE}[6/7]${NC} ${GREEN}Creating directories...${NC}"
