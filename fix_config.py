@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Fix PaddleOCR v5 config for multi-head (CTC+SAR) recognition.
+Fix PaddleOCR v5 config for multi-head (CTC+NRTR) recognition.
 
 Ensures:
 - MultiLabelEncode is used instead of CTCLabelEncode
-- KeepKeys includes label_ctc, label_sar, length, valid_ratio
+- KeepKeys includes label_ctc, label_gtc, length, valid_ratio
 - Both Train and Eval datasets are fixed
 """
 
@@ -30,13 +30,21 @@ def fix_transforms(transforms):
                 params = t['CTCLabelEncode'] or {}
                 if params is None:
                     params = {}
+                params['gtc_encode'] = 'NRTRLabelEncode'
                 new_transforms.append({'MultiLabelEncode': params})
                 has_multi_label = True
                 continue
 
-            # If MultiLabelEncode already exists, keep it
+            # If MultiLabelEncode already exists, ensure gtc_encode is set
             if 'MultiLabelEncode' in t:
                 has_multi_label = True
+                params = t['MultiLabelEncode'] or {}
+                if params is None:
+                    params = {}
+                if 'gtc_encode' not in params or params['gtc_encode'] is None:
+                    print(f"  → Setting gtc_encode to NRTRLabelEncode")
+                    params['gtc_encode'] = 'NRTRLabelEncode'
+                    t['MultiLabelEncode'] = params
                 new_transforms.append(t)
                 continue
 
@@ -47,13 +55,17 @@ def fix_transforms(transforms):
                     keep_params = {}
                 keys = keep_params.get('keep_keys', [])
 
-                required_keys = ['image', 'label_ctc', 'label_sar', 'length', 'valid_ratio']
+                required_keys = ['image', 'label_ctc', 'label_gtc', 'length', 'valid_ratio']
                 # Check if it's using old-style keys
                 if 'label' in keys and 'label_ctc' not in keys:
                     print(f"  → Fixing KeepKeys: {keys} -> {required_keys}")
                     keep_params['keep_keys'] = required_keys
-                elif 'label_sar' not in keys:
-                    print(f"  → Fixing KeepKeys: {keys} -> {required_keys}")
+                elif 'label_gtc' not in keys:
+                    # Fix: label_sar -> label_gtc for NRTRHead
+                    if 'label_sar' in keys:
+                        print(f"  → Fixing KeepKeys (SAR->NRTR): {keys} -> {required_keys}")
+                    else:
+                        print(f"  → Fixing KeepKeys: {keys} -> {required_keys}")
                     keep_params['keep_keys'] = required_keys
                 else:
                     print(f"  → KeepKeys already correct: {keys}")
