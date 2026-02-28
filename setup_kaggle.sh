@@ -44,19 +44,21 @@ pip install -q -r requirements.txt
 pip install -q visualdl shapely scikit-image imgaug lmdb tqdm
 cd ..
 
-
+# Step 5: Download pretrained model
 echo -e "\n${BLUE}[5/7]${NC} ${GREEN}Downloading pretrained model...${NC}"
-mkdir -p pretrain_models/ch_PP-OCRv5_rec_train
-cd pretrain_models/ch_PP-OCRv5_rec_train
+mkdir -p pretrain_models
+cd pretrain_models
 
-if [ ! -f "best_accuracy.pdparams" ]; then
-    echo "Downloading Latin PP-OCRv5 mobile model..."
-    wget -q --show-progress https://paddle-model-ecology.bj.bcebos.com/paddlex/official_pretrained_model/latin_PP-OCRv5_mobile_rec_pretrained.pdparams -O best_accuracy.pdparams
+if [ ! -d "ch_PP-OCRv5_rec_train" ]; then
+    echo "Downloading Chinese PP-OCRv5 model..."
+    wget -q --show-progress https://paddleocr.bj.bcebos.com/PP-OCRv5/chinese/ch_PP-OCRv5_rec_train.tar
+    tar -xf ch_PP-OCRv5_rec_train.tar
+    rm ch_PP-OCRv5_rec_train.tar
     echo "✓ Pretrained model downloaded"
 else
     echo "✓ Pretrained model already exists"
 fi
-cd ../..
+cd ..
 
 # Step 6: Create directories
 echo -e "\n${BLUE}[6/7]${NC} ${GREEN}Creating directories...${NC}"
