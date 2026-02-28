@@ -9,10 +9,10 @@ Global:
   eval_batch_step: [0, 2000]
   cal_metric_during_train: true
   pretrained_model: /kaggle/working/paddleocr-v5-vietnamese/pretrain_models/en_PP-OCRv5_mobile_rec_pretrained
-  checkpoints:
-  save_inference_dir:
+  checkpoints: null
+  save_inference_dir: null
   use_visualdl: false
-  infer_img:
+  infer_img: null
   character_dict_path: /kaggle/working/paddleocr-v5-vietnamese/dict/vi_dict.txt
   max_text_length: &max_text_length 40
   infer_mode: false
@@ -36,7 +36,7 @@ Optimizer:
 Architecture:
   model_type: rec
   algorithm: SVTR_LCNet
-  Transform:
+  Transform: null
   Backbone:
     name: PPLCNetV3
     scale: 0.95
