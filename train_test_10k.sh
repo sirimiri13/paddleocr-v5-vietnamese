@@ -70,9 +70,11 @@ sed -i 's/print_batch_step: 100/print_batch_step: 10/' config_test.yml
 sed -i 's/save_epoch_step: 5/save_epoch_step: 2/' config_test.yml
 sed -i 's|/vi_ppocr_v5|/test_10k|g' config_test.yml
 
+# Extract actual save_model_dir from config (absolute path)
+MODEL_DIR=$(grep 'save_model_dir:' config_test.yml | awk '{print $2}')
 echo "✓ Test config created: config_test.yml"
 echo "   Epochs: 5 (instead of 100)"
-echo "   Output: output/test_10k"
+echo "   Output: $MODEL_DIR"
 echo "   label_sar: removed"
 
 # Check prerequisites
@@ -111,24 +113,51 @@ cd ${PROJECT_ROOT}
 
 # Verify model
 echo -e "\n${GREEN}[5/5] Verifying model...${NC}"
+echo "Checking model at: ${MODEL_DIR}/"
 
-if [ -f "output/test_10k/best_accuracy.pdparams" ]; then
-    echo "✓ Model created successfully"
+# List what was actually saved
+if [ -d "${MODEL_DIR}" ]; then
+    echo "Files in model dir:"
+    ls -la "${MODEL_DIR}/" | head -20
+else
+    echo "⚠️  Model directory not found: ${MODEL_DIR}"
+    echo "Searching for model files..."
+    find /kaggle/working -name "*.pdparams" 2>/dev/null | head -10
+fi
+
+# Check for best_accuracy (standard) or best_model (some versions)
+BEST_MODEL=""
+if [ -f "${MODEL_DIR}/best_accuracy.pdparams" ]; then
+    BEST_MODEL="${MODEL_DIR}/best_accuracy"
+elif [ -f "${MODEL_DIR}/best_model.pdparams" ]; then
+    BEST_MODEL="${MODEL_DIR}/best_model"
+elif [ -f "${MODEL_DIR}/latest.pdparams" ]; then
+    echo "⚠️  best_accuracy not found, using latest checkpoint"
+    BEST_MODEL="${MODEL_DIR}/latest"
+fi
+
+if [ -n "${BEST_MODEL}" ]; then
+    echo "✓ Model found: ${BEST_MODEL}.pdparams"
     
     # Quick export test
+    INFERENCE_DIR="${MODEL_DIR}/../../inference/test_10k"
+    mkdir -p "$(dirname ${INFERENCE_DIR})"
+    
     cd PaddleOCR
     python tools/export_model.py \
-        -c ../config_test.yml \
-        -o Global.pretrained_model=../output/test_10k/best_accuracy \
-           Global.save_inference_dir=../inference/test_10k \
-        > /dev/null 2>&1
-    cd ..
+        -c ${PROJECT_ROOT}/config_test.yml \
+        -o Global.pretrained_model=${BEST_MODEL} \
+           Global.save_inference_dir=${INFERENCE_DIR} \
+        > /dev/null 2>&1 && echo "✓ Export successful" || echo "⚠️  Export failed (non-critical)"
+    cd ${PROJECT_ROOT}
     
-    if [ -f "inference/test_10k/inference.pdmodel" ]; then
-        echo "✓ Export successful"
+    if [ -f "${INFERENCE_DIR}/inference.pdmodel" ]; then
+        echo "✓ Inference model: ${INFERENCE_DIR}/"
     fi
 else
-    echo "❌ Model not found"
+    echo "❌ No model checkpoint found in: ${MODEL_DIR}/"
+    echo "Training may have failed. Check log: $LOG_FILE"
+    tail -20 "$LOG_FILE" 2>/dev/null
     exit 1
 fi
 
@@ -138,8 +167,8 @@ echo -e "║              ${GREEN}✅ Test Completed!${NC}                      
 echo -e "╚══════════════════════════════════════════════════════════════╝"
 
 echo -e "\n${GREEN}📊 Results:${NC}"
-echo "   Test model: output/test_10k/best_accuracy.pdparams"
-echo "   Inference: inference/test_10k/"
+echo "   Test model: ${BEST_MODEL}.pdparams"
+echo "   Inference: ${INFERENCE_DIR:-N/A}"
 echo "   Log: $LOG_FILE"
 
 echo -e "\n${BLUE}📈 Check final accuracy:${NC}"
